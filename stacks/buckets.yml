@@ -1,0 +1,20 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Rent Peek Prerequisite S3 Buckets
+
+Parameters:
+  bucketName:
+    Type: String
+    AllowedPattern: '[a-z0-9][a-z0-9-._]{1,61}[a-z0-9]$'
+    Default: com.mongiardo.rent-peek
+    Description: Name of S3 Data bucket that will hold the lambda code and rental data
+
+Resources:
+  rentalPeekBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref bucketName
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      AccessControl: Private

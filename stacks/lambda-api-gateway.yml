@@ -1,0 +1,201 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Rent Peek Email Generation Lambda + API Gateway
+
+Parameters:
+  apiGatewayName:
+    Type: String
+    Default: RentPeek
+    Description: Enter the name of the API Gateway resource
+  apiGatewayStageName:
+    Type: String
+    AllowedPattern: '[a-z0-9-]+'
+    Default: send-peek
+    Description: Name of endpoint
+  apiGatewayHTTPMethod:
+    Type: String
+    Default: POST
+    Description: HTTP invocation method of endpoint
+  lambdaFunctionName:
+    Type: String
+    AllowedPattern: '[a-zA-Z0-9]+[a-zA-Z0-9-_]+[a-zA-Z0-9]+'
+    Default: RentPeek_SendEmail
+    Description: Name of lambda function
+  lambdaDepsLayerName:
+    Type: String
+    Default: RentPeek_Dependencies
+    Description: Name of lambda dependencies layer
+  rentPeekBucketName:
+    Type: String
+    AllowedPattern: '[a-z0-9][a-z0-9-._]{1,61}[a-z0-9]$'
+    Default: com.mongiardo.rent-peek
+    Description: Name of S3 Data bucket that will hold the lambda code and rental data
+  lambdaArchiveKey:
+    Type: String
+    Default: archives/lambda.zip
+    Description: Key (filepath) of the lambda code archive
+  lambdaDepsArchiveKey:
+    Type: String
+    Default: archives/lambda_deps.zip
+    Description: Key (filepath) of the lambda dependencies archive
+  rentalDataKey:
+    Type: String
+    Default: data/rental_data.csv
+    Description: Key (filepath) of rental data csv in the data bucket
+  zipcodeCoverageKey:
+    Type: String
+    Default: data/zipcode_coverage.csv
+    Description: Key (filepath) of the zipcode coverage csv in the data bucket
+  emailCredsSecretName:
+    Type: String
+    Default: prod/RentPeek/EmailCreds
+    Description: Secret name that stores email credentials as JSON/Key-value
+
+Resources:
+  apiGateway:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Description: Rent Peek API Gateway
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+      Name: !Ref apiGatewayName
+
+  apiGatewayRootMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: !Ref apiGatewayHTTPMethod
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${lambdaArn}/invocations
+          - lambdaArn: !GetAtt lambdaFunction.Arn
+      ResourceId: !GetAtt apiGateway.RootResourceId
+      RestApiId: !Ref apiGateway
+
+  apiGatewayDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - apiGatewayRootMethod
+    Properties:
+      RestApiId: !Ref apiGateway
+      StageName: !Ref apiGatewayStageName
+    
+  lambdaDependenciesLayer:
+    Type: AWS::Lambda::LayerVersion
+    Properties:
+      Content:
+        S3Bucket: !Ref rentPeekBucketName
+        S3Key: !Ref lambdaDepsArchiveKey
+      LayerName: !Ref lambdaDepsLayerName
+      CompatibleRuntimes:
+        - python3.8
+  
+  lambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket: !Ref rentPeekBucketName
+        S3Key: !Ref lambdaArchiveKey
+        # Save if needed
+        # ZipFile: |
+        #   def handler(event,context):
+        #     return {
+        #       'body': 'Not Implemented',
+        #       'headers': {
+        #         'Content-Type': 'text/plain'
+        #       },
+        #       'statusCode': 501
+        #     }
+      Description: Rent peek send email handler
+      FunctionName: !Ref lambdaFunctionName
+      Handler: index.handler
+      MemorySize: 256
+      Role: !GetAtt lambdaIAMRole.Arn
+      Runtime: python3.8
+      Layers:
+        - !Ref lambdaDependenciesLayer
+      Environment:
+        Variables:
+          DATA_BUCKET_NAME: !Ref rentPeekBucketName
+          RENTAL_DATA_KEY: !Ref rentalDataKey
+          ZIPCODE_COVERAGE_KEY: !Ref zipcodeCoverageKey
+          EMAIL_CREDS_SECRET_NAME: !Ref emailCredsSecretName
+      EphemeralStorage:
+        Size: 512
+
+  lambdaApiGatewayInvoke:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt lambdaFunction.Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${apiGateway}/${apiGatewayStageName}/${apiGatewayHTTPMethod}/
+
+  lambdaIAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+      Policies:
+        - PolicyName: !Sub ${lambdaFunctionName}-lambda-role
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource:
+                  - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${lambdaFunctionName}:*
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource:
+                  - !Sub arn:aws:s3:::${rentPeekBucketName}
+                  - !Sub arn:aws:s3:::${rentPeekBucketName}/*
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                  - secretsmanager:DescribeSecret
+                Resource:
+                  - !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${emailCredsSecretName}-*
+
+  lambdaLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${lambdaFunctionName}
+      RetentionInDays: 90
+
+Outputs:
+  apiGatewayInvokeURL:
+    Description: Invoke URL
+    Value: !Sub https://${apiGateway}.execute-api.${AWS::Region}.amazonaws.com/${apiGatewayStageName}
+
+  rentPeekBucketName:
+    Description: Name of the data bucket
+    Value: !Ref rentPeekBucketName
+
+  rentalDataKey:
+    Description: Path of the rental data csv
+    Value: !Ref rentalDataKey 
+
+  zipcodeCoverageKey:
+    Description: Path of the rental data csv
+    Value: !Ref zipcodeCoverageKey 
+
+  lambdaArn:
+    Value: !GetAtt lambdaFunction.Arn
+
+  lambdaLogGroupArn:
+    Value: !GetAtt lambdaLogGroup.Arn
+  
