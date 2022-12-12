@@ -19,6 +19,7 @@ zip -rjq $archive_path "$PWD/constants.py"
 zip -rjq $archive_path "$PWD/aws.py"
 zip -rjq $archive_path "$PWD/utils.py"
 zip -rjq $archive_path "$PWD/rent_peek_generation.py"
+zip -rq $archive_path "./fonts/"
 zip -rq $archive_path "./imgs/"
 
 echo "Lambda pack complete"

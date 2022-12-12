@@ -7,6 +7,7 @@
 #add all the imports we need
 
 from utils import get_zipcode_coverage_data, get_rental_data, get_email_creds
+from constants import TASK_ROOT
 
 #for pandas
 # import pandas as pd
@@ -26,6 +27,8 @@ from random import randrange, randint
 
 
 STORAGE_BASE_PATH = '/tmp/'
+IMGS_BASE_PATH = TASK_ROOT + '/imgs/'
+FONTS_BASE_PATH = TASK_ROOT + '/fonts/'
 
 
 # In[2]:
@@ -116,7 +119,7 @@ def get_data(user_data):
 def get_file(percentage):
         percentage = 5 * round(percentage/5)
         # modified filepath to get image file
-        filename = './imgs/dial_' + str(percentage) + '.png'
+        filename = IMGS_BASE_PATH + 'dial_' + str(percentage) + '.png'
         file_name = Image.open(filename)
         return file_name
     
@@ -142,16 +145,17 @@ def generate_output_img(user_data):
     # ______start______
     #imports template image
     
-    my_image = Image.open("./imgs/rent_template_2.png")
+    template_filename = IMGS_BASE_PATH + 'rent_template_2.png'
+    my_image = Image.open(template_filename)
     
     # ______end________
     
     # ______start______
     #sets font type and size
     
-    font = ImageFont.truetype('Roboto-Bold.ttf', 64)
-    font2 = ImageFont.truetype('Roboto-Bold.ttf', 60)
-    font3 = ImageFont.truetype('Roboto-Bold.ttf', 50)
+    font = ImageFont.truetype(FONTS_BASE_PATH + 'Roboto-Bold.ttf', 64)
+    font2 = ImageFont.truetype(FONTS_BASE_PATH + 'Roboto-Bold.ttf', 60)
+    font3 = ImageFont.truetype(FONTS_BASE_PATH + 'Roboto-Bold.ttf', 50)
     
     # ______end________
     
@@ -223,7 +227,7 @@ def generate_output_img(user_data):
     # ______start______
     # saves the file into the "Results_output" folder
     
-    imgfile = STORAGE_BASE_PATH + randint(10000, 99999) + ".png"
+    imgfile = STORAGE_BASE_PATH + str(randint(10000, 99999)) + ".png"
     background.save(imgfile)
     
     # ______end________
