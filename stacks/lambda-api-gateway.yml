@@ -124,6 +124,7 @@ Resources:
           EMAIL_CREDS_SECRET_NAME: !Ref emailCredsSecretName
       EphemeralStorage:
         Size: 512
+      Timeout: 60
 
   lambdaApiGatewayInvoke:
     Type: AWS::Lambda::Permission
