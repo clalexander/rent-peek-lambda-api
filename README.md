@@ -50,9 +50,13 @@ Error message may be a validation error or may be an internal error if there is 
 
 ## Setup
 
-### Step 0: Development Environment
+### Step 0: Development Environment (Local Machine)
 
-Install python if not already installed.
+Install `python` and `git` if not already installed.
+
+References:
+- https://rogerdudler.github.io/git-guide/
+- https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent?platform=windows
 
 #### Set up repository:
 ```bash
@@ -85,8 +89,7 @@ Install python if not already installed.
 
 Create archives of the lambda code and the dependencies layer code. (Skip this step if you have been provided with the archives.)
 
-** **This only works on linux**
-
+Linux/mac
 ```bash
 # pack lambda archive
 > scripts/pack.sh
@@ -96,6 +99,20 @@ Create archives of the lambda code and the dependencies layer code. (Skip this s
 # pack dependencies archive
 # installs dependencies in folder for use in lambda layer
 > scripts/pack_deps.sh
+# ...
+# output dist/lambda_deps.zip
+```
+
+Windows
+```bash
+# pack lambda archive
+> scripts/pack.bat
+# ...
+# output: dist/lambda.zip
+
+# pack dependencies archive
+# installs dependencies in folder for use in lambda layer
+> scripts/pack_deps.bat
 # ...
 # output dist/lambda_deps.zip
 ```
