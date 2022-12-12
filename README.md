@@ -15,7 +15,7 @@ Get the `apiGatewayInvokeURL` output value from the Lambda API Gateway stack out
 ```js
 {
   url: '<invokeURL>',
-  method: 'POST', // or other method if configured differently
+  method: 'POST',                   // or other method if configured differently
   data: {
     zipcode: 12345,                 // int
     rent: 1234,                     // int
@@ -30,8 +30,8 @@ Get the `apiGatewayInvokeURL` output value from the Lambda API Gateway stack out
 
 ### Success Response
 
+Status code `201`
 ```json
-// Status code 201
 {
   "message": "Success"
 }
@@ -39,8 +39,8 @@ Get the `apiGatewayInvokeURL` output value from the Lambda API Gateway stack out
 
 ### Bad Request Response
 
+Status code `400`
 ```json
-// Status code 400
 {
   "message": "<Error message>"
 }
@@ -54,13 +54,13 @@ Error message may be a validation error or may be an internal error if there is 
 
 Install python if not already installed.
 
-Set up repository:
+#### Set up repository:
 ```bash
 > git clone <repo> [<dir>]
 > cd <dir>
 ```
 
-Optional: Create virtual environment
+#### Optional: Create virtual environment
 ```bash
 # https://docs.python.org/3/library/venv.html
 # linux/mac
@@ -72,7 +72,7 @@ Optional: Create virtual environment
 > .venv\Scripts\activate
 ```
 
-Optional: Install requirements
+#### Optional: Install requirements
 ```bash
 # linux/mac
 > python3 -m pip install -r requirements.txt
@@ -81,7 +81,7 @@ Optional: Install requirements
 > python -m pip install -r requirements.txt
 ```
 
-### Step 1: Archive Lambda and Layer Code
+### Step 1: Archive Lambda Code and Dependencies
 
 Create archives of the lambda code and the dependencies layer code. (Skip this step if you have been provided with the archives.)
 
