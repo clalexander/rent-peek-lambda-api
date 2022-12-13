@@ -8,7 +8,12 @@ from constants import RENTAL_DATA_KEY, ZIPCODE_COVERAGE_KEY, EMAIL_CREDS_SECRET_
 def get_csv_df(key):
   csv_obj = get_s3_obj(key)
   body = csv_obj['Body']
-  csv_str = body.read().decode('utf-8')
+  read_body = body.read()
+  # hack because windows is encoding the file differently
+  try:
+    csv_str = read_body.decode('windows-1252')
+  except:
+    csv_str = read_body.decode('utf-8')
   return pd.read_csv(io.StringIO(csv_str))
 
 
